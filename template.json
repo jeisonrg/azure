@@ -1,0 +1,91 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachines_az1000303_vm0_name": {
+            "defaultValue": "az1000303-vm0",
+            "type": "String"
+        },
+        "disks_az1000303_vm0_OsDisk_1_1fffad53e2864a79ac7ad700dc656111_externalid": {
+            "defaultValue": "/subscriptions/8d4c5f18-1aed-4d2e-a314-5f8864c297ee/resourceGroups/AZ1000301-RG/providers/Microsoft.Compute/disks/az1000303-vm0_OsDisk_1_1fffad53e2864a79ac7ad700dc656111",
+            "type": "String"
+        },
+        "disks_disco2_externalid": {
+            "defaultValue": "/subscriptions/8d4c5f18-1aed-4d2e-a314-5f8864c297ee/resourceGroups/AZ1000301-RG/providers/Microsoft.Compute/disks/disco2",
+            "type": "String"
+        },
+        "networkInterfaces_az1000303_vm0372_externalid": {
+            "defaultValue": "/subscriptions/8d4c5f18-1aed-4d2e-a314-5f8864c297ee/resourceGroups/az1000301-RG/providers/Microsoft.Network/networkInterfaces/az1000303-vm0372",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2019-03-01",
+            "name": "[parameters('virtualMachines_az1000303_vm0_name')]",
+            "location": "eastus",
+            "tags": {
+                "Laboratorio": "1"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_F8s_v2"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "[concat(parameters('virtualMachines_az1000303_vm0_name'), '_OsDisk_1_1fffad53e2864a79ac7ad700dc656111')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "id": "[parameters('disks_az1000303_vm0_OsDisk_1_1fffad53e2864a79ac7ad700dc656111_externalid')]"
+                        }
+                    },
+                    "dataDisks": [
+                        {
+                            "lun": 0,
+                            "name": "disco2",
+                            "createOption": "Attach",
+                            "caching": "None",
+                            "managedDisk": {
+                                "id": "[parameters('disks_disco2_externalid')]"
+                            },
+                            "toBeDetached": false
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachines_az1000303_vm0_name')]",
+                    "adminUsername": "administrador",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[parameters('networkInterfaces_az1000303_vm0372_externalid')]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "https://az1000301rgdiag637.blob.core.windows.net/"
+                    }
+                }
+            }
+        }
+    ]
+}
