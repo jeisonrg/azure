@@ -1,0 +1,61 @@
+on: [push]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout Github Action' 
+      uses: actions/checkout@master
+    
+    - name: 'Login via Azure CLI'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Create ACR
+      id: create-acr
+      run: |
+        az acr create -n teampass -g AppsPassword --location "East US" --sku Standard --admin-enabled
+        echo "::set-output name=acr_username::`az acr credential show -n teampass --query username | xargs`"
+        echo "::set-output name=acr_password::`az acr credential show -n teampass --query passwords[0].value | xargs`"
+        echo "::add-mask::`az acr credential show -n teampass --query passwords[0].value | xargs`"
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: teampass.azurecr.io
+        username: ${{ steps.create-acr.outputs.acr_username }}
+        password: ${{ steps.create-acr.outputs.acr_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/teampass/teampass" -f  "https://github.com/jeisonrg/teampass1/blob/master/Dockerfile" -t teampass.azurecr.io/apppasswor1-img:${{ github.sha }}
+        docker push teampass.azurecr.io/apppasswor1-img:${{ github.sha }}
+      
+    - name: Set Web App ACR authentication
+      uses: Azure/appservice-settings@v1
+      with: 
+        app-name: appPasswor1
+        app-settings-json: | 
+          [
+            {
+              "name": "DOCKER_REGISTRY_SERVER_URL",
+              "value": "teampass.azurecr.io",
+              "slotSetting": false
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+              "value": "${{ steps.create-acr.outputs.acr_username }}",
+              "slotSetting": false
+            },
+            {
+              "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+              "value": "${{ steps.create-acr.outputs.acr_password }}",
+              "slotSetting": false
+            }
+          ]
+        
+    - uses: azure/webapps-deploy@v2
+      with:
+        app-name: appPasswor1
+        images: teampass.azurecr.io/apppasswor1-img:${{ github.sha }}
